@@ -2,6 +2,8 @@ import nltk
 from nltk.corpus import indian
 import numpy as np
 import random
+import sys
+import math
 from typing import List
 
 nltk.download('indian')
@@ -68,13 +70,25 @@ class HMM:
         for self.A use bi-grams of states and states
         for self.B use bi-grams of states and observations
         """
+        
+        for index in range(len(state_ids)):
+            intial_state = state_ids[index][0]
+            self.pi[intial_state] += 1
+               
+        for one_sentence_states_ids in state_ids:
+            for j in range(len(one_sentence_states_ids)-1):
+                self.A[one_sentence_states_ids[j],one_sentence_states_ids[j+1]] += 1
+
+
         for s_ids, o_ids in zip(state_ids, observation_ids):
             # count initial states
             # count state->state transitions
             # count state->observations emissions
             # HINT: use zip for creating bi-grams
-            raise NotImplementedError
-
+            lenght_obs = len(o_ids)
+            for index in range(lenght_obs):
+                self.B[s_ids[index],o_ids[index]] += 1
+   
         # normalize the rows of each probability matrix
         self.pi = np.log(self.pi / np.sum(self.pi))
         self.A = np.log(self.A / np.sum(self.A, axis=1).reshape((-1, 1)))
@@ -101,7 +115,7 @@ class HMM:
             all_path_log_probs.append(transition_log_probs.sum() + observation_log_probs.sum())
 
         return np.array(all_path_log_probs)
-
+    
     def decode(self, observation_ids: List[List[int]]) -> List[List[int]]:
         """
         ENTER CODE HERE: complete the code
@@ -116,7 +130,50 @@ class HMM:
             back_pointer = np.zeros((self.n, T))   # backpointers for each state+sequence id
             # TODO: Fill the viterbi table, back_pointer. Get the optimal sequence by backtracking
             ...
-            raise NotImplementedError
+            for index in range(self.n):
+                viterbi[index][0] = self.pi[index] + self.B[index][obs_ids[0]]
+                back_pointer[index][0] = 0
+
+            for word_index in range(1,T):
+                for state_index in range(self.n):
+                    max_value = -math.inf
+                    max_idx1 = 0
+                    for k in range(self.n):
+                        probability_value = viterbi[k][word_index-1] + self.A[k][state_index] + self.B[state_index][obs_ids[word_index]]
+                        if max_value < probability_value:
+                            max_value = probability_value
+                            max_idx1 = k
+                    viterbi[state_index][word_index] = max_value 
+                    back_pointer[state_index][word_index] = max_idx1 
+        
+            path_prediction = [] 
+            word_index1 = T-1
+
+            while word_index1 > 0:
+                if word_index1 == T-1:
+                    max_value = -math.inf
+                    max_idx = 0
+                    for k in range(self.n):
+                        if viterbi[k][word_index1] > max_value:
+                            max_value = viterbi[k][word_index1]
+                            max_idx = k
+                    path_prediction.append(max_idx)        
+                else:
+                    lastRow = len(path_prediction) - 1
+                    idx_value = back_pointer[int(path_prediction[lastRow])][word_index1+1]
+                    path_prediction.append(idx_value)
+                word_index1 = word_index1 - 1 
+
+            max_value = -math.inf
+            index1 = 0
+            for row in range(self.n):
+                if  max_value < viterbi[row][0]:
+                    max_value = viterbi[row][0]
+                    index1 = row
+            path_prediction.append(index1)
+            path_prediction.reverse()           
+            all_predictions.append(path_prediction)  
+  
         return all_predictions
 
 
@@ -208,6 +265,8 @@ def test_decode():
     test_observations = [2, 1, 1]
 
     bp_true = brute_force(test_observations, 2)
+    print("bp_true")
+    print(bp_true)
 
     decoded_states = test_hmm_tagger.decode([test_observations])
     
