@@ -127,7 +127,7 @@ class HMM:
         for obs_ids in observation_ids:
             T = len(obs_ids)  # Sequence length
             viterbi = np.zeros((self.n, T))  # The viterbi table
-            back_pointer = np.zeros((self.n, T))   # backpointers for each state+sequence id
+            back_pointer = np.zeros((self.n, T),dtype=np.int64)   # backpointers for each state+sequence id
             # TODO: Fill the viterbi table, back_pointer. Get the optimal sequence by backtracking
             ...
             for index in range(self.n):
@@ -145,7 +145,6 @@ class HMM:
                             max_idx1 = k
                     viterbi[state_index][word_index] = max_value 
                     back_pointer[state_index][word_index] = max_idx1 
-        
             path_prediction = [] 
             word_index1 = T-1
 
@@ -161,7 +160,7 @@ class HMM:
                 else:
                     lastRow = len(path_prediction) - 1
                     idx_value = back_pointer[int(path_prediction[lastRow])][word_index1+1]
-                    path_prediction.append(idx_value)
+                    path_prediction.append(int(idx_value))
                 word_index1 = word_index1 - 1 
 
             max_value = -math.inf
@@ -171,9 +170,9 @@ class HMM:
                     max_value = viterbi[row][0]
                     index1 = row
             path_prediction.append(index1)
-            path_prediction.reverse()           
+            path_prediction.reverse()         
             all_predictions.append(path_prediction)  
-  
+       
         return all_predictions
 
 
@@ -265,8 +264,6 @@ def test_decode():
     test_observations = [2, 1, 1]
 
     bp_true = brute_force(test_observations, 2)
-    print("bp_true")
-    print(bp_true)
 
     decoded_states = test_hmm_tagger.decode([test_observations])
     

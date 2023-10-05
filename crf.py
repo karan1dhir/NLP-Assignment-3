@@ -40,7 +40,8 @@ def load_data(
                 token, tag = line.rstrip().split("\t")
                 token_sent.append(token)
                 tag_sent.append(tag)
-
+    print('token_sents',token_sents)
+    print('tag_sents',tag_sents)
     return token_sents, tag_sents
 
 
